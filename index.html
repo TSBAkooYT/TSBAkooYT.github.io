@@ -15,16 +15,28 @@
       margin: auto;
       border: 2px solid black;
     }
-    #score, #high {
-      font-size: 20px;
+    #ui {
+      position: absolute;
+      top: 10px;
+      width: 100%;
+      color: white;
+      text-shadow: 2px 2px 4px black;
+    }
+    button {
+      margin: 3px;
+      padding: 5px 10px;
     }
   </style>
 </head>
 <body>
 
-<h2>🐦 Ultra Flappy</h2>
-<div id="score">Score: 0</div>
-<div id="high">High Score: 0</div>
+<div id="ui">
+  <h2>🐦 Ultra Flappy</h2>
+  <div id="score">Score: 0</div>
+  <div id="high">High Score: 0</div>
+  <button onclick="togglePause()">⏸ Pause</button>
+</div>
+
 <canvas id="game"></canvas>
 
 <script>
@@ -34,66 +46,66 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth * 0.9;
 canvas.height = 500;
 
-// 🐦 quş şəkli
+// 🐦 quş
 const birdImg = new Image();
 birdImg.src = "https://i.imgur.com/QZ6ZQZL.png";
 
-// 🎵 səslər
+// 🎵 səs
 const jumpSound = new Audio("https://www.soundjay.com/buttons/sounds/button-16.mp3");
-const dieSound = new Audio("https://www.soundjay.com/misc/sounds/fail-buzzer-02.mp3");
-
-// 🎵 arxa fon musiqisi
 const bgMusic = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3");
 bgMusic.loop = true;
 bgMusic.volume = 0.3;
 
-let bird = { x: 60, y: 200, w: 40, h: 30, velocity: 0, angle: 0 };
+let bird = { x: 60, y: 200, w: 40, h: 30, velocity: 0 };
 let gravity = 0.5;
 let jump = -9;
 
 let pipes = [];
 let score = 0;
 let gameOver = false;
+let paused = false;
 
 // 🏅 high score
 let highScore = localStorage.getItem("high") || 0;
 document.getElementById("high").innerText = "High Score: " + highScore;
 
-// 🌙 gecə/gündüz
-let isNight = false;
-setInterval(() => {
-  isNight = !isNight;
-  document.body.style.background = isNight
-    ? "linear-gradient(#0f2027, #203a43, #2c5364)"
-    : "linear-gradient(#70c5ce, #ffffff)";
-}, 8000);
-
-// 🟩 borular (DAHA ARALI)
+// 🟩 borular
 function createPipe() {
   let gap = 170;
   let top = Math.random() * (canvas.height - gap);
   pipes.push({ x: canvas.width, top: top, bottom: top + gap, passed: false });
 }
 
-// 🚀 draw
+// ⏸ PAUSE FUNCTION
+function togglePause() {
+  paused = !paused;
+
+  if (paused) {
+    bgMusic.pause();
+  } else {
+    bgMusic.play();
+    draw();
+  }
+}
+
+// 🎮 GAME LOOP
 function draw() {
   if (gameOver) return;
 
+  if (paused) {
+    requestAnimationFrame(draw);
+    return;
+  }
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // quş physics
+  // bird physics
   bird.velocity += gravity;
   bird.y += bird.velocity;
-  bird.angle = bird.velocity * 2;
 
-  // 🐦 rotate quş
-  ctx.save();
-  ctx.translate(bird.x + bird.w/2, bird.y + bird.h/2);
-  ctx.rotate(bird.angle * Math.PI/180);
-  ctx.drawImage(birdImg, -bird.w/2, -bird.h/2, bird.w, bird.h);
-  ctx.restore();
+  ctx.drawImage(birdImg, bird.x, bird.y, bird.w, bird.h);
 
-  // borular
+  // pipes
   for (let i = 0; i < pipes.length; i++) {
     let p = pipes[i];
     p.x -= 2;
@@ -119,7 +131,6 @@ function draw() {
     }
   }
 
-  // yerə düşmə
   if (bird.y > canvas.height - bird.h) {
     endGame();
   }
@@ -129,7 +140,6 @@ function draw() {
 
 function endGame() {
   gameOver = true;
-  dieSound.play();
 
   if (score > highScore) {
     localStorage.setItem("high", score);
@@ -141,22 +151,19 @@ function endGame() {
   }, 200);
 }
 
-// 📱 touch/click
-function jumpAction() {
-  if (!gameOver) {
+// 📱 control
+function flap() {
+  if (!gameOver && !paused) {
     bird.velocity = jump;
     jumpSound.currentTime = 0;
     jumpSound.play();
-
-    // 🎵 musiqi başlasın
     bgMusic.play();
   }
 }
 
-document.addEventListener("touchstart", jumpAction);
-document.addEventListener("click", jumpAction);
+document.addEventListener("touchstart", flap);
+document.addEventListener("click", flap);
 
-// borular daha gec gəlsin (ARALIQ)
 setInterval(createPipe, 3000);
 
 draw();
