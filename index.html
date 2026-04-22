@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mobil Oyun</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      color: white;
+      text-align: center;
+      font-family: Arial;
+    }
+    canvas {
+      border: 2px solid white;
+      display: block;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+  <h2>📱 Touch ilə oyna!</h2>
+  <canvas id="game"></canvas>
+  <p id="score">Score: 0</p>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = window.innerWidth * 0.9;
+    canvas.height = 500;
+
+    let bird = { x: 50, y: 200, size: 20, velocity: 0 };
+    let gravity = 0.6;
+    let jump = -10;
+
+    let pipes = [];
+    let score = 0;
+
+    function createPipe() {
+      let gap = 120;
+      let top = Math.random() * (canvas.height - gap);
+      pipes.push({ x: canvas.width, top: top, bottom: top + gap });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // bird
+      bird.velocity += gravity;
+      bird.y += bird.velocity;
+      ctx.fillRect(bird.x, bird.y, bird.size, bird.size);
+
+      // pipes
+      for (let i = 0; i < pipes.length; i++) {
+        let p = pipes[i];
+        p.x -= 3;
+
+        ctx.fillRect(p.x, 0, 40, p.top);
+        ctx.fillRect(p.x, p.bottom, 40, canvas.height);
+
+        // collision
+        if (
+          bird.x < p.x + 40 &&
+          bird.x + bird.size > p.x &&
+          (bird.y < p.top || bird.y + bird.size > p.bottom)
+        ) {
+          alert("Game Over! Score: " + score);
+          location.reload();
+        }
+
+        // score
+        if (p.x === bird.x) {
+          score++;
+          document.getElementById("score").innerText = "Score: " + score;
+        }
+      }
+
+      // ground collision
+      if (bird.y > canvas.height - bird.size) {
+        alert("Game Over! Score: " + score);
+        location.reload();
+      }
+
+      requestAnimationFrame(draw);
+    }
+
+    setInterval(createPipe, 2000);
+
+    // 📱 TOUCH + CLICK
+    function jumpAction() {
+      bird.velocity = jump;
+    }
+
+    document.addEventListener("touchstart", jumpAction);
+    document.addEventListener("click", jumpAction);
+
+    draw();
+  </script>
+</body>
+</html>
