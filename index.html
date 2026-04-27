@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Ultra Flappy</title>
+  <title>Flappy Zakixx11YT</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       margin: 0;
-      text-align: center;
       font-family: Arial;
+      text-align: center;
       transition: background 1s;
+      overflow: hidden;
     }
     canvas {
       display: block;
@@ -17,24 +18,25 @@
     }
     #ui {
       position: absolute;
-      top: 10px;
+      top: 5px;
       width: 100%;
       color: white;
       text-shadow: 2px 2px 4px black;
     }
     button {
       margin: 3px;
-      padding: 5px 10px;
     }
   </style>
 </head>
 <body>
 
 <div id="ui">
-  <h2>🐦 Ultra Flappy</h2>
+  <h2>🐦 Flappy Zakixx11YT</h2>
   <div id="score">Score: 0</div>
-  <div id="high">High Score: 0</div>
-  <button onclick="togglePause()">⏸ Pause</button>
+  <div id="coins">Coins: 0</div>
+  <div id="best">Best: 0</div>
+  <button onclick="toggleSound()">🔊</button>
+  <button onclick="shop()">🛒 Shop</button>
 </div>
 
 <canvas id="game"></canvas>
@@ -43,130 +45,153 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-canvas.width = window.innerWidth * 0.9;
+canvas.width = window.innerWidth * 0.95;
 canvas.height = 500;
 
-// 🐦 quş
+// 🐦 skins
+const skins = [
+  "https://i.imgur.com/QZ6ZQZL.png",
+  "https://i.imgur.com/7Q9Qx0F.png",
+  "https://i.imgur.com/8Km9tLL.png"
+];
+let skinIndex = 0;
 const birdImg = new Image();
-birdImg.src = "https://i.imgur.com/QZ6ZQZL.png";
+birdImg.src = skins[0];
 
-// 🎵 səs
-const jumpSound = new Audio("https://www.soundjay.com/buttons/sounds/button-16.mp3");
-const bgMusic = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3");
-bgMusic.loop = true;
-bgMusic.volume = 0.3;
-
-let bird = { x: 60, y: 200, w: 40, h: 30, velocity: 0 };
+let bird = { x: 60, y: 200, w: 40, h: 30, v: 0 };
 let gravity = 0.5;
-let jump = -9;
+let jump = -4; // 🔥 BURDA DƏYİŞDİ
 
 let pipes = [];
 let score = 0;
+let coins = localStorage.getItem("coins") || 0;
+let best = localStorage.getItem("best") || 0;
+
 let gameOver = false;
-let paused = false;
+let speed = 2;
 
-// 🏅 high score
-let highScore = localStorage.getItem("high") || 0;
-document.getElementById("high").innerText = "High Score: " + highScore;
+// UI
+function updateUI(){
+  document.getElementById("score").innerText = "Score: " + score;
+  document.getElementById("coins").innerText = "Coins: " + coins;
+  document.getElementById("best").innerText = "Best: " + best;
+}
+updateUI();
 
-// 🟩 borular
-function createPipe() {
-  let gap = 170;
-  let top = Math.random() * (canvas.height - gap);
-  pipes.push({ x: canvas.width, top: top, bottom: top + gap, passed: false });
+// 🎵 sound
+let soundOn = true;
+const jumpS = new Audio("https://www.soundjay.com/buttons/sounds/button-16.mp3");
+const dieS = new Audio("https://www.soundjay.com/misc/sounds/fail-buzzer-02.mp3");
+const music = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3");
+music.loop = true;
+music.volume = 0.3;
+
+// 🌙 day/night
+let night = false;
+setInterval(()=>{
+  night = !night;
+  document.body.style.background = night
+    ? "linear-gradient(#0f2027,#203a43,#2c5364)"
+    : "linear-gradient(#70c5ce,#fff)";
+},6000);
+
+// 🟩 pipes
+function createPipe(){
+  let gap = 150 + Math.random()*50;
+  let top = Math.random()*(canvas.height-gap);
+  pipes.push({x:canvas.width,top:top,bottom:top+gap,passed:false});
 }
 
-// ⏸ PAUSE FUNCTION
-function togglePause() {
-  paused = !paused;
+// 🚀 loop
+function update(){
+  if(gameOver) return;
 
-  if (paused) {
-    bgMusic.pause();
-  } else {
-    bgMusic.play();
-    draw();
-  }
-}
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-// 🎮 GAME LOOP
-function draw() {
-  if (gameOver) return;
+  bird.v += gravity;
+  bird.y += bird.v;
 
-  if (paused) {
-    requestAnimationFrame(draw);
-    return;
-  }
+  ctx.drawImage(birdImg,bird.x,bird.y,bird.w,bird.h);
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "yellow";
+  ctx.font = "bold 14px Arial";
+  ctx.textAlign = "center";
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = 3;
+  ctx.strokeText("zakixx11", bird.x + bird.w / 2, bird.y - 5);
+  ctx.fillText("zakixx11", bird.x + bird.w / 2, bird.y - 5);
 
-  // bird physics
-  bird.velocity += gravity;
-  bird.y += bird.velocity;
-
-  ctx.drawImage(birdImg, bird.x, bird.y, bird.w, bird.h);
-
-  // pipes
-  for (let i = 0; i < pipes.length; i++) {
+  for(let i=0;i<pipes.length;i++){
     let p = pipes[i];
-    p.x -= 2;
+    p.x -= speed;
 
-    ctx.fillStyle = "green";
-    ctx.fillRect(p.x, 0, 60, p.top);
-    ctx.fillRect(p.x, p.bottom, 60, canvas.height);
+    ctx.fillStyle="green";
+    ctx.fillRect(p.x,0,60,p.top);
+    ctx.fillRect(p.x,p.bottom,60,canvas.height);
 
-    // collision
-    if (
-      bird.x < p.x + 60 &&
-      bird.x + bird.w > p.x &&
-      (bird.y < p.top || bird.y + bird.h > p.bottom)
-    ) {
+    if(
+      bird.x<p.x+60 &&
+      bird.x+bird.w>p.x &&
+      (bird.y<p.top || bird.y+bird.h>p.bottom)
+    ){
       endGame();
     }
 
-    // score
-    if (!p.passed && p.x + 60 < bird.x) {
-      p.passed = true;
+    if(!p.passed && p.x+60<bird.x){
+      p.passed=true;
       score++;
-      document.getElementById("score").innerText = "Score: " + score;
+      coins++;
+      localStorage.setItem("coins",coins);
+
+      if(score>best){
+        best=score;
+        localStorage.setItem("best",best);
+      }
+
+      speed += 0.1;
+      updateUI();
     }
   }
 
-  if (bird.y > canvas.height - bird.h) {
+  if(bird.y>canvas.height-bird.h){
     endGame();
   }
 
-  requestAnimationFrame(draw);
+  requestAnimationFrame(update);
 }
 
-function endGame() {
-  gameOver = true;
-
-  if (score > highScore) {
-    localStorage.setItem("high", score);
-  }
-
-  setTimeout(() => {
-    alert("💀 Game Over! Score: " + score);
-    location.reload();
-  }, 200);
+function endGame(){
+  gameOver=true;
+  if(soundOn) dieS.play();
+  setTimeout(()=>alert("💀 Game Over\nScore: "+score),200);
 }
 
-// 📱 control
-function flap() {
-  if (!gameOver && !paused) {
-    bird.velocity = jump;
-    jumpSound.currentTime = 0;
-    jumpSound.play();
-    bgMusic.play();
+function flap(){
+  if(gameOver) return;
+
+  bird.v = jump;
+  if(soundOn){
+    jumpS.currentTime=0;
+    jumpS.play();
+    music.play();
   }
 }
 
-document.addEventListener("touchstart", flap);
-document.addEventListener("click", flap);
+document.addEventListener("touchstart",flap);
+document.addEventListener("click",flap);
 
-setInterval(createPipe, 3000);
+function toggleSound(){
+  soundOn=!soundOn;
+}
 
-draw();
+function shop(){
+  skinIndex = (skinIndex+1)%skins.length;
+  birdImg.src = skins[skinIndex];
+}
+
+setInterval(createPipe,2200);
+
+update();
 </script>
 
 </body>
