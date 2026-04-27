@@ -37,6 +37,7 @@
   <div id="best">Best: 0</div>
   <button onclick="toggleSound()">🔊</button>
   <button onclick="shop()">🛒 Shop</button>
+  <button onclick="restartGame()">🔄 Restart</button>
 </div>
 
 <canvas id="game"></canvas>
@@ -60,7 +61,7 @@ birdImg.src = skins[0];
 
 let bird = { x: 60, y: 200, w: 40, h: 30, v: 0 };
 let gravity = 0.5;
-let jump = -4; // 🔥 BURDA DƏYİŞDİ
+let jump = -6; // 🔥 FIX
 
 let pipes = [];
 let score = 0;
@@ -86,15 +87,6 @@ const music = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song
 music.loop = true;
 music.volume = 0.3;
 
-// 🌙 day/night
-let night = false;
-setInterval(()=>{
-  night = !night;
-  document.body.style.background = night
-    ? "linear-gradient(#0f2027,#203a43,#2c5364)"
-    : "linear-gradient(#70c5ce,#fff)";
-},6000);
-
 // 🟩 pipes
 function createPipe(){
   let gap = 150 + Math.random()*50;
@@ -112,14 +104,6 @@ function update(){
   bird.y += bird.v;
 
   ctx.drawImage(birdImg,bird.x,bird.y,bird.w,bird.h);
-
-  ctx.fillStyle = "yellow";
-  ctx.font = "bold 14px Arial";
-  ctx.textAlign = "center";
-  ctx.strokeStyle = "black";
-  ctx.lineWidth = 3;
-  ctx.strokeText("zakixx11", bird.x + bird.w / 2, bird.y - 5);
-  ctx.fillText("zakixx11", bird.x + bird.w / 2, bird.y - 5);
 
   for(let i=0;i<pipes.length;i++){
     let p = pipes[i];
@@ -160,12 +144,25 @@ function update(){
   requestAnimationFrame(update);
 }
 
+// 💀 end
 function endGame(){
   gameOver=true;
   if(soundOn) dieS.play();
   setTimeout(()=>alert("💀 Game Over\nScore: "+score),200);
 }
 
+// 🔄 RESTART FIX
+function restartGame(){
+  bird.y = 200;
+  bird.v = 0;
+  pipes = [];
+  score = 0;
+  speed = 2;
+  gameOver = false;
+  updateUI();
+}
+
+// 📱 flap
 function flap(){
   if(gameOver) return;
 
@@ -176,19 +173,21 @@ function flap(){
     music.play();
   }
 }
-
 document.addEventListener("touchstart",flap);
 document.addEventListener("click",flap);
 
+// 🔊 sound toggle
 function toggleSound(){
   soundOn=!soundOn;
 }
 
+// 🛒 shop
 function shop(){
   skinIndex = (skinIndex+1)%skins.length;
   birdImg.src = skins[skinIndex];
 }
 
+// pipes
 setInterval(createPipe,2200);
 
 update();
